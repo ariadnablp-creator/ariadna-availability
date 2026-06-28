@@ -42,6 +42,20 @@ th:first-child{border-radius:0 8px 0 0}th:last-child{border-radius:8px 0 0 0}
 .chip:hover{background:#E0F2F1}
 .chip.none{background:#F6F6F6;border-color:#E8E8E8;color:#999;cursor:default}
 .muted{color:#999;font-size:13px}
+.fconf{background:#FFF5F5;border:1px solid #F3C0C0;border-radius:10px;padding:9px 13px;font-size:12.5px;margin-bottom:12px;line-height:1.7}
+.fteacher{border:1px solid #EEE;border-radius:12px;padding:11px 14px;margin-bottom:9px}
+.ft-h{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.ft-h b{font-family:'Nunito';font-weight:800;font-size:15px}
+.ft-badges{display:flex;gap:6px;flex-wrap:wrap}
+.fb{font-style:normal;font-size:11px;font-weight:700;color:#fff;border-radius:999px;padding:2px 9px}
+.fb.r{background:var(--red)} .fb.o{background:var(--orange)} .fb.t{background:var(--teal)}
+.frow{font-size:12.5px;margin-top:4px;line-height:1.9}
+.flbl{font-weight:700;color:#666;margin-left:4px}
+.fhole{background:#EAF8F8;border:1px solid #CDEBEA;border-radius:7px;padding:2px 7px;white-space:nowrap}
+.fhole b{color:#1d8a89}
+.fout{background:#FFF1E6;border:1px solid #F3D5BC;border-radius:7px;padding:2px 7px;white-space:nowrap}
+.fpark{background:#F6F6F6;border:1px solid #E6E6E6;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.fpark i{font-style:normal;color:#aaa;font-size:10px;margin-right:4px}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--charcoal);color:#fff;padding:12px 20px;border-radius:12px;
  font-weight:600;font-size:14px;opacity:0;transform:translateY(10px);transition:.25s;z-index:99}
 .toast.show{opacity:1;transform:none} .toast.err{background:var(--red)}
@@ -49,7 +63,12 @@ th:first-child{border-radius:0 8px 0 0}th:last-child{border-radius:8px 0 0 0}
 .center .card{padding:32px 28px}
 .center input{margin:14px 0;text-align:center}
 .hint{font-size:12.5px;color:#aaa;margin-top:10px}
-.note-ta{min-height:80px;resize:vertical}
+.note-ta{min-height:64px;resize:vertical}
+.noteitem{display:flex;align-items:flex-start;gap:10px;background:#FFF7EF;border:1px solid #F0DCC8;border-radius:10px;padding:9px 12px;margin-bottom:7px}
+.noteitem .notex{color:var(--red);font-weight:800;font-size:18px;cursor:pointer;line-height:1;flex-shrink:0;margin-top:1px}
+.noteitem .notebody{flex:1}
+.noteitem .notetext{font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.noteitem .notemeta{font-size:11px;color:#aaa;margin-top:3px}
 .sub{font-size:12.5px;color:#999;margin-top:10px;margin-bottom:4px}
 #weeklbl{font-weight:700;color:#555;font-size:13.5px}
 @media(max-width:600px){.win-time{width:88px}.win-day{width:96px}.hd h1{font-size:18px}}
@@ -76,6 +95,7 @@ function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+
 function heWeek(iso){const s=new Date(iso+"T12:00:00");const e=new Date(s);e.setDate(e.getDate()+6);
  return s.getDate()+" "+HE_MON[s.getMonth()]+" עד "+e.getDate()+" "+HE_MON[e.getMonth()];}
 function toast(msg,err){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");setTimeout(()=>t.className="toast",2600);}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 async function boot(){
   const {data:{session}} = await sb.auth.getSession();
@@ -119,6 +139,15 @@ async function renderApp(){
    </div>
 
    <div class="card">
+     <h2>תצוגת חורים, מורה-מורה</h2>
+     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:4px">
+       <div class="sub" id="findmeta" style="margin:0"></div>
+       <button class="btn ghost sm" id="refreshfind">רענון</button>
+     </div>
+     <div id="findbody"></div>
+   </div>
+
+   <div class="card">
      <h2>זמינות מורה</h2>
      <div class="row">
        <div style="flex:1;min-width:220px">
@@ -147,15 +176,76 @@ async function renderApp(){
 
    <div class="card">
      <h2>הערות ותזכורות לשבוע</h2>
-     <div class="sub">⚠️ תזכורת בלבד לצוות, <b>לא משנה שעות אוטומטית</b>. כדי לשנות שעות של מורה, עדכנו את הטבלה למעלה (יום, משעה, עד שעה).</div>
-     <textarea class="note-ta" id="weeknote" placeholder="למשל: 'השבוע אין לימודים ביום שלישי'..."></textarea>
-     <div style="margin-top:10px"><button class="btn g sm" id="savenote">שמירת הערה</button></div>
+     <div class="sub" style="margin-top:0;margin-bottom:10px">⚠️ תזכורת לצוות בלבד, <b>לא משנה שעות</b>. כל הערה נשמרת בנפרד וניתן למחוק. אפשר בעברית או רוסית.</div>
+     <div id="noteslist"></div>
+     <textarea class="note-ta" id="newnote" placeholder="כתבו הערה חדשה..." style="margin-top:8px"></textarea>
+     <div style="margin-top:8px"><button class="btn g sm" id="addnote">הוספת הערה</button></div>
    </div>
   </div>`;
 
   document.getElementById("logout").onclick=async()=>{await sb.auth.signOut();EMAIL="";renderLogin();};
   if(!TEACHERS.length){const{data}=await sb.from("teachers").select("id,name,subjects").eq("active",true).order("name");TEACHERS=data||[];}
-  renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNote(); setupSend();
+  renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNotes(); setupSend(); loadFindings(false);
+  document.getElementById("refreshfind").onclick=()=>loadFindings(true);
+}
+
+const DAYHE={Sun:"ראשון",Mon:"שני",Tue:"שלישי",Wed:"רביעי",Thu:"חמישי",Fri:"שישי"};
+function heDate(iso){try{const[y,m,d]=iso.split("-");return d+"."+m;}catch(e){return iso;}}
+function fmtCreatorDate(s){const M={Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};const p=String(s).split("-");return p.length===3?p[0]+"."+(M[p[1]]||p[1]):s;}
+function cleanName(s){return String(s||"").split(" ").filter(w=>w.toLowerCase()!=="null").join(" ");}
+
+async function loadFindings(force){
+  const meta=document.getElementById("findmeta"),body=document.getElementById("findbody");
+  const {data}=await sb.from("findings").select("*").eq("week_start",WEEK).maybeSingle();
+  const stale=!data||(Date.now()-new Date(data.generated_at).getTime()>15*60*1000);
+  if(force||stale){
+    meta.textContent="⏳ מחשב ממצאים עדכניים (עד דקה-שתיים)...";
+    body.innerHTML="";
+    const prev=data?data.generated_at:null;
+    await sb.from("report_requests").insert({scope:"findings",week_start:WEEK,requested_by:EMAIL});
+    let tries=0;const iv=setInterval(async()=>{tries++;
+      const {data:d}=await sb.from("findings").select("*").eq("week_start",WEEK).maybeSingle();
+      if(d&&d.generated_at!==prev){clearInterval(iv);renderFindings(d.data,d.generated_at);}
+      else if(tries>45){clearInterval(iv);meta.textContent="לוקח יותר מהצפוי, נסו רענון.";}
+    },4000);
+    return;
+  }
+  renderFindings(data.data,data.generated_at);
+}
+
+function renderFindings(d,gen){
+  const meta=document.getElementById("findmeta"),body=document.getElementById("findbody");
+  const t=new Date(gen);
+  meta.innerHTML="עודכן: "+t.toLocaleDateString("he-IL")+" "+t.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+  let html="";
+  const conf=d.conflicts||[];
+  if(conf.length){
+    html+=`<div class="fconf"><b>🔴 ${conf.length} התנגשויות:</b> `+conf.map(c=>
+      `${esc(c.teacher)} (${DAYHE[c.day]||""} ${c.a.from}-${c.a.to} ↔ ${c.b.from}-${c.b.to})`).join(" · ")+`</div>`;
+  }
+  const teachers=(d.teachers||[]).filter(x=>x.counts.holes||x.counts.outside||x.counts.conflicts||x.parked.length);
+  if(!teachers.length){html+=`<div class="muted" style="padding:6px 0">אין חורים או התנגשויות לשבוע זה אצל המורים שהוזנו.</div>`;}
+  teachers.forEach(tt=>{
+    const totLessons=tt.holes.reduce((a,h)=>a+h.lessons,0);
+    html+=`<div class="fteacher"><div class="ft-h"><b>${esc(tt.name)}</b>`
+      +`<span class="ft-badges">${tt.counts.conflicts?`<i class="fb r">${tt.counts.conflicts} התנגשויות</i>`:""}`
+      +`${tt.counts.outside?`<i class="fb o">${tt.counts.outside} מחוץ לזמינות</i>`:""}`
+      +`${tt.counts.holes?`<i class="fb t">${tt.counts.holes} חורים</i>`:""}</span></div>`;
+    if(tt.holes.length){
+      html+=`<div class="frow"><span class="flbl">חורים:</span> `+tt.holes.map(h=>
+        `<span class="fhole">${DAYHE[h.day]||""} ${h.from}-${h.to} <b>${h.lessons} שיע׳</b></span>`).join(" ")+`</div>`;
+    }
+    if(tt.outside.length){
+      html+=`<div class="frow"><span class="flbl">מחוץ לזמינות:</span> `+tt.outside.map(o=>
+        `<span class="fout">${DAYHE[o.day]||""} ${o.from}-${o.to}${o.day_off?" (לא עובד)":""}</span>`).join(" ")+`</div>`;
+    }
+    if(tt.holes.length&&tt.parked.length){
+      html+=`<div class="frow"><span class="flbl">מומלץ להכניס (חנייה):</span> `+tt.parked.slice(0,Math.max(totLessons,1)).map(p=>
+        `<span class="fpark">${esc(cleanName(p.student))}<i>${esc((p.subject||"").slice(0,8))}</i></span>`).join(" ")+`</div>`;
+    }
+    html+=`</div>`;
+  });
+  body.innerHTML=html;
 }
 
 function setupSend(){
@@ -185,7 +275,7 @@ function renderWeekBtns(){
   document.getElementById("weekbtns").innerHTML=opts.map(([w,l])=>
     `<button class="${w===WEEK?'on':''}" data-w="${w}">${l}</button>`).join("");
   document.querySelectorAll("#weekbtns button").forEach(b=>b.onclick=async()=>{
-    WEEK=b.dataset.w;renderWeekBtns();await loadEditor();await loadFilled();await loadNote();});
+    WEEK=b.dataset.w;renderWeekBtns();await loadEditor();await loadFilled();await loadNotes();loadFindings(false);});
   document.getElementById("weeklbl").textContent=heWeek(WEEK);
 }
 
@@ -247,13 +337,20 @@ async function loadFilled(){
   el.querySelectorAll("[data-t]").forEach(c=>c.onclick=async()=>{TID=c.dataset.t;renderTeacherSelect();await loadEditor();window.scrollTo({top:0,behavior:"smooth"});});
 }
 
-async function loadNote(){
-  const {data}=await sb.from("week_notes").select("freetext").eq("week_start",WEEK).maybeSingle();
-  document.getElementById("weeknote").value=(data&&data.freetext)||"";
-  document.getElementById("savenote").onclick=async()=>{
-    const ft=document.getElementById("weeknote").value;
-    const {error}=await sb.from("week_notes").upsert({week_start:WEEK,freetext:ft,updated_by:EMAIL});
-    toast(error?("שגיאה: "+error.message):"ההערה נשמרה ✓",!!error);
+async function loadNotes(){
+  const list=document.getElementById("noteslist");
+  const {data}=await sb.from("notes").select("*").eq("week_start",WEEK).order("created_at",{ascending:false});
+  if(!data||!data.length) list.innerHTML=`<div class="muted" style="padding:2px 0 4px">אין הערות לשבוע זה.</div>`;
+  else list.innerHTML=data.map(n=>`<div class="noteitem"><span class="notex" data-id="${n.id}" title="מחיקה">×</span>`
+    +`<div class="notebody"><div class="notetext">${esc(n.text)}</div><div class="notemeta">${esc(n.created_by||"")}</div></div></div>`).join("");
+  list.querySelectorAll(".notex").forEach(x=>x.onclick=async()=>{
+    await sb.from("notes").delete().eq("id",x.dataset.id);toast("נמחק");loadNotes();});
+  document.getElementById("addnote").onclick=async()=>{
+    const t=document.getElementById("newnote").value.trim();
+    if(!t){toast("כתבו הערה",true);return;}
+    const {error}=await sb.from("notes").insert({week_start:WEEK,text:t,created_by:EMAIL});
+    if(error){toast("שגיאה: "+error.message,true);return;}
+    document.getElementById("newnote").value="";toast("נוסף ✓");loadNotes();
   };
 }
 
