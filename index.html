@@ -135,6 +135,17 @@ async function renderApp(){
    </div>
 
    <div class="card">
+     <h2>שליחת דוח למייל</h2>
+     <div class="sub" style="margin-top:0;margin-bottom:12px">יישלח ל-office@ariadnacenter.com, שני הפורמטים יחד (דו-לשוני + גרפי), תוך דקה-שתיים.</div>
+     <div class="row" id="sendbtns" style="gap:10px">
+       <button class="btn" data-scope="today">חורים להיום</button>
+       <button class="btn ghost" data-scope="today_tomorrow">היום ומחר</button>
+       <button class="btn ghost" data-scope="week">כל השבוע (הנבחר)</button>
+     </div>
+     <div class="sub" id="sendstatus" style="margin-top:10px"></div>
+   </div>
+
+   <div class="card">
      <h2>הערות ותזכורות לשבוע</h2>
      <div class="sub">⚠️ תזכורת בלבד לצוות, <b>לא משנה שעות אוטומטית</b>. כדי לשנות שעות של מורה, עדכנו את הטבלה למעלה (יום, משעה, עד שעה).</div>
      <textarea class="note-ta" id="weeknote" placeholder="למשל: 'השבוע אין לימודים ביום שלישי'..."></textarea>
@@ -144,7 +155,28 @@ async function renderApp(){
 
   document.getElementById("logout").onclick=async()=>{await sb.auth.signOut();EMAIL="";renderLogin();};
   if(!TEACHERS.length){const{data}=await sb.from("teachers").select("id,name,subjects").eq("active",true).order("name");TEACHERS=data||[];}
-  renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNote();
+  renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNote(); setupSend();
+}
+
+function setupSend(){
+  document.querySelectorAll("#sendbtns button").forEach(b=>b.onclick=async()=>{
+    const scope=b.dataset.scope, st=document.getElementById("sendstatus");
+    document.querySelectorAll("#sendbtns button").forEach(x=>x.disabled=true);
+    st.textContent="שולח בקשה...";
+    const {data,error}=await sb.from("report_requests").insert({scope,week_start:WEEK,requested_by:EMAIL}).select().single();
+    document.querySelectorAll("#sendbtns button").forEach(x=>x.disabled=false);
+    if(error){st.textContent="שגיאה: "+error.message;toast("שגיאה",true);return;}
+    toast("הבקשה נשלחה ✓");
+    st.textContent="⏳ הבקשה התקבלה. הדוח יישלח למייל תוך דקה-שתיים...";
+    let tries=0;
+    const iv=setInterval(async()=>{
+      tries++;
+      const {data:d}=await sb.from("report_requests").select("status,result").eq("id",data.id).single();
+      if(d&&d.status==="done"){clearInterval(iv);st.textContent="✅ הדוח נשלח למייל ("+(d.result||"")+").";}
+      else if(d&&d.status==="error"){clearInterval(iv);st.textContent="❌ שגיאה בהפקה: "+(d.result||"");}
+      else if(tries>60){clearInterval(iv);st.textContent="הבקשה בעיבוד... בדקו את המייל בקרוב.";}
+    },4000);
+  });
 }
 
 function renderWeekBtns(){
