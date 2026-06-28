@@ -327,7 +327,7 @@ async function saveRows(){
     btn.disabled=false;
     if(error){toast("שגיאת שמירה: "+error.message,true);return;}
   } else btn.disabled=false;
-  toast("נשמר ✓"); await loadFilled();
+  toast("נשמר ✓"); await loadFilled(); loadFindings(true);
 }
 
 async function loadFilled(){
