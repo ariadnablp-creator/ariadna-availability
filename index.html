@@ -133,7 +133,8 @@ async function renderApp(){
    </div>
 
    <div class="card">
-     <h2>שבוע</h2>
+     <h2>שבוע לתצוגה ולדוחות</h2>
+     <div class="sub" style="margin-top:0;margin-bottom:10px">בוחר על איזה שבוע מציגים חורים ושולחים דוחות. הלוז הקבוע למטה חל על כל שבוע.</div>
      <div class="weekbtns" id="weekbtns"></div>
      <div class="sub" id="weeklbl"></div>
    </div>
@@ -148,7 +149,8 @@ async function renderApp(){
    </div>
 
    <div class="card">
-     <h2>זמינות מורה</h2>
+     <h2>לוז קבוע של מורה</h2>
+     <div class="sub" style="margin-top:0;margin-bottom:12px">הלוז הקבוע חל על <b>כל שבוע</b>. מזינים פעם אחת. חריגה לשבוע מסוים? כתבו בהערות ואעדכן.</div>
      <div class="row">
        <div style="flex:1;min-width:220px">
          <label>בחרו מורה</label>
@@ -159,7 +161,7 @@ async function renderApp(){
    </div>
 
    <div class="card">
-     <h2>מורים עם זמינות לשבוע זה</h2>
+     <h2>מורים עם לוז קבוע</h2>
      <div class="chips" id="filled"></div>
    </div>
 
@@ -290,7 +292,7 @@ let WINROWS=[];
 async function loadEditor(){
   const ed=document.getElementById("editor");
   if(!TID){ed.innerHTML=`<p class="muted">בחרו מורה כדי להזין זמינות.</p>`;return;}
-  const {data}=await sb.from("availability").select("*").eq("week_start",WEEK).eq("teacher_id",TID);
+  const {data}=await sb.from("standing_availability").select("*").eq("teacher_id",TID);
   const ord={};DAYS.forEach((d,i)=>ord[d[0]]=i);
   WINROWS=(data||[]).map(r=>({day:r.day,from:r.from_time,to:r.to_time,note:r.note||""}))
                     .sort((a,b)=>(ord[a.day]-ord[b.day])||a.from.localeCompare(b.from));
@@ -318,10 +320,10 @@ function drawRows(){
 async function saveRows(){
   for(const r of WINROWS){ if(!r.from||!r.to||r.from>=r.to){toast("בדקו שעות: 'משעה' חייב להיות לפני 'עד שעה'",true);return;} }
   const btn=document.getElementById("saverows");btn.disabled=true;
-  await sb.from("availability").delete().eq("week_start",WEEK).eq("teacher_id",TID);
+  await sb.from("standing_availability").delete().eq("teacher_id",TID);
   if(WINROWS.length){
-    const rows=WINROWS.map(r=>({week_start:WEEK,teacher_id:TID,day:r.day,from_time:r.from,to_time:r.to,note:r.note||"",updated_by:EMAIL}));
-    const {error}=await sb.from("availability").insert(rows);
+    const rows=WINROWS.map(r=>({teacher_id:TID,day:r.day,from_time:r.from,to_time:r.to,note:r.note||"",updated_by:EMAIL}));
+    const {error}=await sb.from("standing_availability").insert(rows);
     btn.disabled=false;
     if(error){toast("שגיאת שמירה: "+error.message,true);return;}
   } else btn.disabled=false;
@@ -329,7 +331,7 @@ async function saveRows(){
 }
 
 async function loadFilled(){
-  const {data}=await sb.from("availability").select("teacher_id").eq("week_start",WEEK);
+  const {data}=await sb.from("standing_availability").select("teacher_id");
   const ids=[...new Set((data||[]).map(r=>r.teacher_id))];
   const el=document.getElementById("filled");
   if(!ids.length){el.innerHTML=`<span class="chip none">עדיין אף מורה</span>`;return;}
