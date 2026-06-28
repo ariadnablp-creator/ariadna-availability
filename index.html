@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>זמינות מורים · אריאדנה</title>
+<link rel="icon" href="logo.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Rubik:wght@400;500;600;700&display=swap');
+:root{--orange:#F47B20;--green:#2A9D3A;--teal:#3ABFBE;--charcoal:#1E1E1E;--red:#E53E3E;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Rubik',sans-serif;color:var(--charcoal);background:#F4F4F4;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px}
+.hd{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:18px;
+ padding:18px 24px;border-bottom:4px solid var(--orange);box-shadow:0 4px 18px rgba(0,0,0,.06);flex-wrap:wrap;gap:12px}
+.hd img{height:46px}
+.hd h1{font-family:'Nunito';font-weight:900;font-size:21px}
+.hd .who{font-size:12.5px;color:#888}
+.btn{font-family:'Rubik';font-weight:700;font-size:14px;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;color:#fff;background:var(--orange)}
+.btn:hover{filter:brightness(.95)} .btn.g{background:var(--green)} .btn.ghost{background:#EFEFEF;color:#444} .btn.sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.card{background:#fff;border-radius:16px;padding:20px 22px;margin-top:18px;box-shadow:0 4px 18px rgba(0,0,0,.05)}
+.card h2{font-family:'Nunito';font-weight:800;font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+.card h2::before{content:"";width:7px;height:20px;border-radius:4px;background:var(--orange)}
+label{font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:5px}
+select,input[type=text],input[type=email],input[type=time],textarea{font-family:'Rubik';font-size:14px;width:100%;
+ padding:9px 11px;border:1.5px solid #E2E2E2;border-radius:10px;background:#fff}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--teal)}
+.row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px}
+.weekbtns{display:flex;gap:8px;flex-wrap:wrap}
+.weekbtns button{border:1.5px solid #E2E2E2;background:#fff;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13.5px;cursor:pointer}
+.weekbtns button.on{background:var(--charcoal);color:#fff;border-color:var(--charcoal)}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:8px;text-align:right;border-bottom:1px solid #F0F0F0;font-size:13.5px;vertical-align:middle}
+thead th{background:var(--charcoal);color:#fff;font-weight:600;font-size:12.5px}
+th:first-child{border-radius:0 8px 0 0}th:last-child{border-radius:8px 0 0 0}
+.win-time{width:110px}.win-day{width:120px}
+.del{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;font-weight:700}
+.tag{display:inline-block;background:#FEF3E8;color:var(--orange);border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.chip{background:#F0F8F8;border:1px solid #CDEBEA;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;cursor:pointer}
+.chip:hover{background:#E0F2F1}
+.chip.none{background:#F6F6F6;border-color:#E8E8E8;color:#999;cursor:default}
+.muted{color:#999;font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--charcoal);color:#fff;padding:12px 20px;border-radius:12px;
+ font-weight:600;font-size:14px;opacity:0;transform:translateY(10px);transition:.25s;z-index:99}
+.toast.show{opacity:1;transform:none} .toast.err{background:var(--red)}
+.center{max-width:420px;margin:60px auto;text-align:center}
+.center .card{padding:32px 28px}
+.center input{margin:14px 0;text-align:center}
+.hint{font-size:12.5px;color:#aaa;margin-top:10px}
+.note-ta{min-height:80px;resize:vertical}
+.sub{font-size:12.5px;color:#999;margin-top:-8px;margin-bottom:12px}
+@media(max-width:600px){.win-time{width:88px}.win-day{width:96px}.hd h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = "https://wnscifrjrhxapbrlppnb.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induc2NpZnJqcmh4YXBicmxwcG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2MzIyNTksImV4cCI6MjA5ODIwODI1OX0.8DjI-V7b2dsKtTroW7pN0xydCoLDOCQ1O_6kxRt3bPo";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const DAYS = [["Sun","ראשון"],["Mon","שני"],["Tue","שלישי"],["Wed","רביעי"],["Thu","חמישי"],["Fri","שישי"]];
+const HE_MON = ["בינואר","בפברואר","במרץ","באפריל","במאי","ביוני","ביולי","באוגוסט","בספטמבר","באוקטובר","בנובמבר","בדצמבר"];
+const app = document.getElementById("app");
+let TEACHERS = [], WEEK = sundayISO(new Date()), TID = "", EMAIL = "";
+
+function pad(n){return String(n).padStart(2,"0")}
+function sundayISO(dt){const d=new Date(dt);d.setDate(d.getDate()-d.getDay());d.setHours(12,0,0,0);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
+function heWeek(iso){const s=new Date(iso+"T12:00:00");const e=new Date(s);e.setDate(e.getDate()+6);
+ return s.getDate()+" "+HE_MON[s.getMonth()]+" עד "+e.getDate()+" "+HE_MON[e.getMonth()];}
+function toast(msg,err){const t=document.getElementById("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");setTimeout(()=>t.className="toast",2600);}
+
+async function boot(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session){EMAIL=session.user.email;renderApp();} else renderLogin();
+  sb.auth.onAuthStateChange((_e,s)=>{ if(s&&!EMAIL){EMAIL=s.user.email;renderApp();} });
+}
+
+/* ---------- התחברות ---------- */
+function renderLogin(){
+  app.innerHTML = `<div class="center"><div class="card">
+    <img src="logo.png" style="height:54px;margin-bottom:14px">
+    <h2 style="justify-content:center">כניסה למערכת זמינות</h2>
+    <p class="muted">הזינו את האימייל שלכם, נשלח קישור כניסה.</p>
+    <input type="email" id="em" placeholder="האימייל שלך" autocomplete="email">
+    <button class="btn" style="width:100%" id="send">שלחו לי קישור כניסה</button>
+    <div class="hint" id="lh"></div>
+  </div></div>`;
+  document.getElementById("send").onclick = async ()=>{
+    const email=document.getElementById("em").value.trim();
+    if(!email){toast("הזינו אימייל",true);return;}
+    document.getElementById("send").disabled=true;
+    const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+    document.getElementById("lh").textContent = error ? ("שגיאה: "+error.message) : "נשלח! בדקו את תיבת האימייל ולחצו על הקישור.";
+    document.getElementById("send").disabled=false;
+  };
+}
+
+/* ---------- אפליקציה ---------- */
+async function renderApp(){
+  app.innerHTML = `<div class="wrap">
+   <div class="hd">
+     <img src="logo.png" alt="Ariadna">
+     <div style="flex:1"><h1>זמינות מורים</h1><div class="who">${EMAIL}</div></div>
+     <button class="btn ghost sm" id="logout">יציאה</button>
+   </div>
+
+   <div class="card">
+     <h2>שבוע</h2>
+     <div class="weekbtns" id="weekbtns"></div>
+     <div class="sub" id="weeklbl"></div>
+   </div>
+
+   <div class="card">
+     <h2>זמינות מורה</h2>
+     <div class="row">
+       <div style="flex:1;min-width:220px">
+         <label>בחרו מורה</label>
+         <select id="teacher"></select>
+       </div>
+     </div>
+     <div id="editor"></div>
+   </div>
+
+   <div class="card">
+     <h2>מורים עם זמינות לשבוע זה</h2>
+     <div class="chips" id="filled"></div>
+   </div>
+
+   <div class="card">
+     <h2>הערות חופשיות לשבוע</h2>
+     <div class="sub">חריגות כלליות, למשל "השבוע אין לימודים ביום שלישי".</div>
+     <textarea class="note-ta" id="weeknote" placeholder="כתבו כאן..."></textarea>
+     <div style="margin-top:10px"><button class="btn g sm" id="savenote">שמירת הערה</button></div>
+   </div>
+  </div>`;
+
+  document.getElementById("logout").onclick=async()=>{await sb.auth.signOut();EMAIL="";renderLogin();};
+  if(!TEACHERS.length){const{data}=await sb.from("teachers").select("id,name,subjects").order("name");TEACHERS=data||[];}
+  renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNote();
+}
+
+function renderWeekBtns(){
+  const cur=sundayISO(new Date()), nxt=addDays(cur,7);
+  const opts=[[cur,"השבוע הנוכחי"],[nxt,"השבוע הבא"]];
+  document.getElementById("weekbtns").innerHTML=opts.map(([w,l])=>
+    `<button class="${w===WEEK?'on':''}" data-w="${w}">${l}</button>`).join("");
+  document.querySelectorAll("#weekbtns button").forEach(b=>b.onclick=async()=>{
+    WEEK=b.dataset.w;renderWeekBtns();await loadEditor();await loadFilled();await loadNote();});
+  document.getElementById("weeklbl").textContent=heWeek(WEEK);
+}
+
+function renderTeacherSelect(){
+  const sel=document.getElementById("teacher");
+  sel.innerHTML=`<option value="">— בחרו מורה —</option>`+TEACHERS.map(t=>
+    `<option value="${t.id}" ${t.id===TID?"selected":""}>${t.name}</option>`).join("");
+  sel.onchange=async()=>{TID=sel.value;await loadEditor();};
+}
+
+let WINROWS=[];
+async function loadEditor(){
+  const ed=document.getElementById("editor");
+  if(!TID){ed.innerHTML=`<p class="muted">בחרו מורה כדי להזין זמינות.</p>`;return;}
+  const {data}=await sb.from("availability").select("*").eq("week_start",WEEK).eq("teacher_id",TID).order("day");
+  WINROWS=(data||[]).map(r=>({day:r.day,from:r.from_time,to:r.to_time,note:r.note||""}));
+  drawRows();
+}
+function drawRows(){
+  const ed=document.getElementById("editor");
+  const body=WINROWS.map((r,i)=>`<tr>
+    <td><select class="win-day" data-i="${i}" data-f="day">${DAYS.map(([c,h])=>`<option value="${c}" ${c===r.day?"selected":""}>${h}</option>`).join("")}</select></td>
+    <td><input class="win-time" type="time" data-i="${i}" data-f="from" value="${r.from}"></td>
+    <td><input class="win-time" type="time" data-i="${i}" data-f="to" value="${r.to}"></td>
+    <td><input type="text" data-i="${i}" data-f="note" value="${(r.note||'').replace(/"/g,'&quot;')}" placeholder="הערה (לא חובה)"></td>
+    <td><button class="del" data-del="${i}" title="מחיקה">×</button></td></tr>`).join("");
+  ed.innerHTML=`<table><thead><tr><th class="win-day">יום</th><th>משעה</th><th>עד שעה</th><th>הערה</th><th></th></tr></thead>
+    <tbody>${body||`<tr><td colspan="5" class="muted" style="padding:14px">אין עדיין שורות. הוסיפו זמינות.</td></tr>`}</tbody></table>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost sm" id="addrow">+ הוספת יום</button>
+      <button class="btn g sm" id="saverows">שמירת הזמינות</button>
+    </div>`;
+  ed.querySelectorAll("[data-f]").forEach(el=>el.onchange=()=>{const i=+el.dataset.i;WINROWS[i][el.dataset.f]=el.value;});
+  ed.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{WINROWS.splice(+b.dataset.del,1);drawRows();});
+  document.getElementById("addrow").onclick=()=>{WINROWS.push({day:"Sun",from:"14:00",to:"21:00",note:""});drawRows();};
+  document.getElementById("saverows").onclick=saveRows;
+}
+async function saveRows(){
+  for(const r of WINROWS){ if(!r.from||!r.to||r.from>=r.to){toast("בדקו שעות: 'משעה' חייב להיות לפני 'עד שעה'",true);return;} }
+  const btn=document.getElementById("saverows");btn.disabled=true;
+  await sb.from("availability").delete().eq("week_start",WEEK).eq("teacher_id",TID);
+  if(WINROWS.length){
+    const rows=WINROWS.map(r=>({week_start:WEEK,teacher_id:TID,day:r.day,from_time:r.from,to_time:r.to,note:r.note||"",updated_by:EMAIL}));
+    const {error}=await sb.from("availability").insert(rows);
+    btn.disabled=false;
+    if(error){toast("שגיאת שמירה: "+error.message,true);return;}
+  } else btn.disabled=false;
+  toast("נשמר ✓"); await loadFilled();
+}
+
+async function loadFilled(){
+  const {data}=await sb.from("availability").select("teacher_id").eq("week_start",WEEK);
+  const ids=[...new Set((data||[]).map(r=>r.teacher_id))];
+  const el=document.getElementById("filled");
+  if(!ids.length){el.innerHTML=`<span class="chip none">עדיין אף מורה</span>`;return;}
+  el.innerHTML=ids.map(id=>{const t=TEACHERS.find(x=>x.id===id);return t?`<span class="chip" data-t="${id}">${t.name}</span>`:"";}).join("");
+  el.querySelectorAll("[data-t]").forEach(c=>c.onclick=async()=>{TID=c.dataset.t;renderTeacherSelect();await loadEditor();window.scrollTo({top:0,behavior:"smooth"});});
+}
+
+async function loadNote(){
+  const {data}=await sb.from("week_notes").select("freetext").eq("week_start",WEEK).maybeSingle();
+  document.getElementById("weeknote").value=(data&&data.freetext)||"";
+  document.getElementById("savenote").onclick=async()=>{
+    const ft=document.getElementById("weeknote").value;
+    const {error}=await sb.from("week_notes").upsert({week_start:WEEK,freetext:ft,updated_by:EMAIL});
+    toast(error?("שגיאה: "+error.message):"ההערה נשמרה ✓",!!error);
+  };
+}
+
+boot();
+</script>
+</body>
+</html>
