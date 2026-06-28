@@ -177,8 +177,8 @@ async function renderApp(){
    </div>
 
    <div class="card">
-     <h2>הערות ותזכורות לשבוע</h2>
-     <div class="sub" style="margin-top:0;margin-bottom:10px">⚠️ תזכורת לצוות בלבד, <b>לא משנה שעות</b>. כל הערה נשמרת בנפרד וניתן למחוק. אפשר בעברית או רוסית.</div>
+     <h2>הערות ותזכורות</h2>
+     <div class="sub" style="margin-top:0;margin-bottom:10px">⚠️ תזכורות קבועות (חלות קדימה, לא לשבוע ספציפי). <b>לא משנות שעות</b>. כל הערה נשמרת בנפרד וניתן למחוק. אפשר בעברית או רוסית.</div>
      <div id="noteslist"></div>
      <textarea class="note-ta" id="newnote" placeholder="כתבו הערה חדשה..." style="margin-top:8px"></textarea>
      <div style="margin-top:8px"><button class="btn g sm" id="addnote">הוספת הערה</button></div>
@@ -341,7 +341,7 @@ async function loadFilled(){
 
 async function loadNotes(){
   const list=document.getElementById("noteslist");
-  const {data}=await sb.from("notes").select("*").eq("week_start",WEEK).order("created_at",{ascending:false});
+  const {data}=await sb.from("notes").select("*").order("created_at",{ascending:false});
   if(!data||!data.length) list.innerHTML=`<div class="muted" style="padding:2px 0 4px">אין הערות לשבוע זה.</div>`;
   else list.innerHTML=data.map(n=>`<div class="noteitem"><span class="notex" data-id="${n.id}" title="מחיקה">×</span>`
     +`<div class="notebody"><div class="notetext">${esc(n.text)}</div><div class="notemeta">${esc(n.created_by||"")}</div></div></div>`).join("");
