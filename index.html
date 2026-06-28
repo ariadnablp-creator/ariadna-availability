@@ -50,7 +50,8 @@ th:first-child{border-radius:0 8px 0 0}th:last-child{border-radius:8px 0 0 0}
 .center input{margin:14px 0;text-align:center}
 .hint{font-size:12.5px;color:#aaa;margin-top:10px}
 .note-ta{min-height:80px;resize:vertical}
-.sub{font-size:12.5px;color:#999;margin-top:-8px;margin-bottom:12px}
+.sub{font-size:12.5px;color:#999;margin-top:10px;margin-bottom:4px}
+#weeklbl{font-weight:700;color:#555;font-size:13.5px}
 @media(max-width:600px){.win-time{width:88px}.win-day{width:96px}.hd h1{font-size:18px}}
 </style>
 </head>
@@ -142,7 +143,7 @@ async function renderApp(){
   </div>`;
 
   document.getElementById("logout").onclick=async()=>{await sb.auth.signOut();EMAIL="";renderLogin();};
-  if(!TEACHERS.length){const{data}=await sb.from("teachers").select("id,name,subjects").order("name");TEACHERS=data||[];}
+  if(!TEACHERS.length){const{data}=await sb.from("teachers").select("id,name,subjects").eq("active",true).order("name");TEACHERS=data||[];}
   renderWeekBtns(); renderTeacherSelect(); await loadEditor(); await loadFilled(); await loadNote();
 }
 
@@ -167,8 +168,10 @@ let WINROWS=[];
 async function loadEditor(){
   const ed=document.getElementById("editor");
   if(!TID){ed.innerHTML=`<p class="muted">בחרו מורה כדי להזין זמינות.</p>`;return;}
-  const {data}=await sb.from("availability").select("*").eq("week_start",WEEK).eq("teacher_id",TID).order("day");
-  WINROWS=(data||[]).map(r=>({day:r.day,from:r.from_time,to:r.to_time,note:r.note||""}));
+  const {data}=await sb.from("availability").select("*").eq("week_start",WEEK).eq("teacher_id",TID);
+  const ord={};DAYS.forEach((d,i)=>ord[d[0]]=i);
+  WINROWS=(data||[]).map(r=>({day:r.day,from:r.from_time,to:r.to_time,note:r.note||""}))
+                    .sort((a,b)=>(ord[a.day]-ord[b.day])||a.from.localeCompare(b.from));
   drawRows();
 }
 function drawRows(){
